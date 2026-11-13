@@ -1,0 +1,37 @@
+# Dostosuj ustawienia do swojego wyszukiwania.
+# Ten neutralny plik nie zawiera żadnych danych dostępu.
+# Jest widoczny dla osób mających dostęp do prywatnego repozytorium.
+
+[search]
+country = "pl"
+location = ""
+keywords = []
+exclude_keywords = []
+
+[collection]
+max_pages = 1
+request_timeout = 20
+history_days = 180
+
+# Włącz tylko źródła, które skonfigurujesz.
+# Adzuna wymaga ADZUNA_APP_ID i ADZUNA_APP_KEY w GitHub Actions Secrets.
+[sources.adzuna]
+enabled = false
+
+# Podaj identyfikatory tablic firm z publicznych adresów ATS.
+# https://jobs.lever.co/firma -> boards = ["firma"]
+# region: global albo eu
+[sources.lever]
+enabled = false
+region = "global"
+boards = []
+
+# https://boards.greenhouse.io/firma -> boards = ["firma"]
+[sources.greenhouse]
+enabled = false
+boards = []
+
+# Opcjonalny email. Dane dostępowe wyłącznie jako GitHub Actions Secrets.
+[email]
+enabled = false
+send_empty = false

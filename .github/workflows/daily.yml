@@ -1,0 +1,95 @@
+name: Oferty pracy
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: job-search-data
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    if: github.ref_name == github.event.repository.default_branch && (github.event_name != 'schedule' || vars.JOB_SEARCH_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Pobierz projekt
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Skonfiguruj Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pobierz dotychczasową historię
+        shell: bash
+        run: |
+          mkdir -p data
+          if git ls-remote --exit-code --heads origin job-data > /dev/null; then
+            git fetch origin job-data
+            git show FETCH_HEAD:data/jobs.json > data/jobs.json
+          else
+            status=$?
+            if [ "$status" -ne 2 ]; then exit "$status"; fi
+            echo 'Pierwsze uruchomienie: brak historii.'
+          fi
+      - name: Zbierz oferty i przygotuj dashboard
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: python -m jobsearch.cli run --config config.toml --state data/jobs.json --dashboard output/dashboard.html --new-jobs output/new-jobs.json
+      - name: Zapisz historię na osobnej gałęzi
+        shell: bash
+        run: |
+          set -euo pipefail
+          worktree="$RUNNER_TEMP/job-data-worktree"
+          if git show-ref --verify --quiet refs/remotes/origin/job-data; then
+            git worktree add --detach "$worktree" refs/remotes/origin/job-data
+          else
+            git worktree add --detach "$worktree" HEAD
+            git -C "$worktree" switch --orphan job-data
+          fi
+          mkdir -p "$worktree/data"
+          cp data/jobs.json "$worktree/data/jobs.json"
+          git -C "$worktree" add data/jobs.json
+          if ! git -C "$worktree" diff --cached --quiet; then
+            git -C "$worktree" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Aktualizacja ofert'
+            git -C "$worktree" push origin HEAD:refs/heads/job-data
+          fi
+      - name: Udostępnij dashboard do pobrania
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-ofert
+          path: output/dashboard.html
+          if-no-files-found: error
+          retention-days: 30
+      - name: Opcjonalnie wyślij nowe oferty
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURITY: ${{ secrets.SMTP_SECURITY }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_TO: ${{ secrets.SMTP_TO }}
+        run: python -m jobsearch.cli email --config config.toml --state data/jobs.json --new-jobs output/new-jobs.json
+
+
+      - name: Zapisz potwierdzenie wysyłki
+        shell: bash
+        run: |
+          set -euo pipefail
+          worktree="$RUNNER_TEMP/job-data-worktree"
+          cp data/jobs.json "$worktree/data/jobs.json"
+          git -C "$worktree" add data/jobs.json
+          if ! git -C "$worktree" diff --cached --quiet; then
+            git -C "$worktree" -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Potwierdzenie wysyłki'
+            git -C "$worktree" push origin HEAD:refs/heads/job-data
+          fi
+
+
