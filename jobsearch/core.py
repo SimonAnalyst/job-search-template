@@ -90,7 +90,9 @@ def collect(config: dict[str, Any], env: dict[str, str] | None = None) -> tuple[
     env = os.environ if env is None else env
     search, collection = config["search"], config["collection"]
     source_cfg = config["sources"]
-    enabled = [(name, source_cfg.get(name, {})) for name in ("adzuna", "lever", "greenhouse")
+    dynamic_names = ("justjoinit", "rocketjobs", "solidjobs", "capgemini")
+    html_names = ("nofluffjobs", "bulldogjob", "theprotocol", "pracuj", "jobsora", "jobhunt", "czyjesteldorado")
+    enabled = [(name, source_cfg.get(name, {})) for name in ("adzuna", "lever", "greenhouse") + dynamic_names + html_names
                if _enabled(source_cfg.get(name, {}))]
     if not enabled:
         raise CollectionError("włącz co najmniej jedno źródło w sekcji [sources.*]")
@@ -110,11 +112,19 @@ def collect(config: dict[str, Any], env: dict[str, str] | None = None) -> tuple[
                     raise sources.SourceError("uzupełnij listę identyfikatorów boards")
                 result = sources.fetch_lever(boards=boards, timeout=collection["request_timeout"],
                                              region=cfg.get("region", "global"))
-            else:
+            elif name == "greenhouse":
                 boards = cfg.get("boards", [])
                 if not isinstance(boards, list) or not boards:
                     raise sources.SourceError("uzupełnij listę identyfikatorów boards")
                 result = sources.fetch_greenhouse(boards=boards, timeout=collection["request_timeout"])
+            else:
+                if name in dynamic_names:
+                    from . import dynamic_boards as board_adapter
+                else:
+                    from . import html_boards as board_adapter
+                result = board_adapter.fetch(name, keywords=search["keywords"],
+                    location=search["location"], pages=collection["max_pages"],
+                    timeout=collection["request_timeout"], options=cfg)
             if isinstance(result, sources.SourceBatch):
                 items, partial_error = result.offers, result.error
             else:

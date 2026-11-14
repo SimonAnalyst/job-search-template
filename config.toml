@@ -31,7 +31,44 @@ boards = []
 enabled = false
 boards = []
 
+# Polskie portale. Włącz tylko źródła, z których chcesz korzystać.
+[sources.justjoinit]
+enabled = false
+
+[sources.rocketjobs]
+enabled = false
+
+[sources.solidjobs]
+enabled = false
+divisions = ["IT", "Engineering", "Marketing", "Sales", "HR", "Logistics", "Finances", "Other"]
+campaign = "job-search-template"
+
+[sources.nofluffjobs]
+enabled = false
+
+[sources.bulldogjob]
+enabled = false
+
+[sources.theprotocol]
+enabled = false
+
+[sources.pracuj]
+enabled = false
+
+[sources.jobsora]
+enabled = false
+
+[sources.jobhunt]
+enabled = false
+
+[sources.czyjesteldorado]
+enabled = false
+
+# Oferty jednego pracodawcy.
+[sources.capgemini]
+enabled = false
 # Opcjonalny email. Dane dostępowe wyłącznie jako GitHub Actions Secrets.
 [email]
 enabled = false
 send_empty = false
+

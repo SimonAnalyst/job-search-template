@@ -9,7 +9,44 @@ Prosty projekt do zbierania ofert według własnych kryteriów. GitHub Actions u
 - Opcjonalnie adresy stron karier firm korzystających z Greenhouse lub Lever.
 - Opcjonalnie konto pocztowe umożliwiające wysyłkę SMTP i hasło aplikacji, jeśli wymaga go dostawca.
 
-Adzuna jest źródłem o szerokim zakresie ofert. Greenhouse i Lever przeszukują tylko wskazane strony karier; nie przeszukują całego internetu. W Lever wybierz `region = "global"` dla `jobs.lever.co` albo `region = "eu"` dla `jobs.eu.lever.co`. W jednej konfiguracji można wybrać jeden region. Ten projekt nie zawiera adapterów wszystkich portali z innych wyszukiwarek. Dostępność ofert zależy od źródeł, limitów API i ustawionych kryteriów. Bezpłatny poziom Adzuna jest przewidziany do oceny API; sprawdź aktualny limit i warunki na swoim koncie przed ustawieniem codziennych zapytań. Zapoznaj się z [zasadami Adzuna](https://developer.adzuna.com/docs/terms_of_service) i zasadami pozostałych źródeł.
+Adzuna jest źródłem o szerokim zakresie ofert. Greenhouse i Lever przeszukują tylko wskazane strony karier; nie przeszukują całego internetu. W Lever wybierz `region = "global"` dla `jobs.lever.co` albo `region = "eu"` dla `jobs.eu.lever.co`. W jednej konfiguracji można wybrać jeden region. Dostępność ofert zależy od źródeł, limitów API i ustawionych kryteriów. Bezpłatny poziom Adzuna jest przewidziany do oceny API; sprawdź aktualny limit i warunki na swoim koncie przed ustawieniem codziennych zapytań. Zapoznaj się z [zasadami Adzuna](https://developer.adzuna.com/docs/terms_of_service) i zasadami pozostałych źródeł.
+
+## Dostępne źródła ofert
+
+Wszystkie źródła startują jako wyłączone. W `config.toml` zmień `enabled = false` na `enabled = true` przy wybranych nazwach, a w `[search]` wpisz swoje hasła. Nie kopiuj żadnych kluczy do pliku konfiguracji.
+
+| Źródło | Ustawienie | Jak działa |
+| --- | --- | --- |
+| Adzuna | `[sources.adzuna]` | Oficjalne API, wymaga własnych kluczy. |
+| SOLID.Jobs | `[sources.solidjobs]` | Publiczne API bez klucza; `divisions` wybiera działy, a `campaign` jest identyfikatorem integracji. Domyślnie wybrano wszystkie działy. |
+| Just Join IT | `[sources.justjoinit]` | Publiczna strona ofert; dostęp i struktura strony mogą się zmienić. |
+| RocketJobs | `[sources.rocketjobs]` | Publiczna strona ofert; dostęp i struktura strony mogą się zmienić. |
+| Capgemini | `[sources.capgemini]` | Oferty jednego pracodawcy, nie całego portalu. |
+| Greenhouse i Lever | `[sources.greenhouse]`, `[sources.lever]` | Publiczne tablice wskazanych firm. |
+| the:protocol, Pracuj.pl, JobHunt | `[sources.theprotocol]`, `[sources.pracuj]`, `[sources.jobhunt]` | Eksperymentalne. Próby na żywo zwróciły oferty ze wszystkich trzech; w próbie Pracuj odczytano też miasta. the:protocol i JobHunt zwracały oferty bez rozpoznanej lokalizacji — włączony filtr `location` może je wykluczyć. JobHunt może nie odzwierciedlać wyszukiwanego hasła po stronie portalu; wyniki są dodatkowo filtrowane lokalnie. |
+| No Fluff Jobs, Bulldogjob, Jobsora, Czy Jest Eldorado | `[sources.nofluffjobs]`, `[sources.bulldogjob]`, `[sources.jobsora]`, `[sources.czyjesteldorado]` | Automatyczne pobieranie jest niedostępne w tym projekcie z uwagi na ograniczenia regulaminów. Skorzystaj ze stron tych portali ręcznie. |
+
+Automatyczny odczyt HTML zależy od polityki dostępu i aktualnej budowy strony; nie gwarantuje pełnej listy ofert i może przestać działać. Program nie omija zabezpieczeń: błąd źródła jest widoczny w logu Actions. Przy osiągnięciu limitu stron wyświetla ostrzeżenie — zwiększ `max_pages` w `[collection]`, jeśli dane źródło obsługuje kolejne strony. RocketJobs ogranicza pobieranie do pierwszej strony, ponieważ działanie kolejnych stron nie zostało potwierdzone. Lokalizacja dla Just Join IT, RocketJobs i Capgemini jest filtrowana lokalnie, co może zmniejszyć liczbę trafień przy limicie stron. JobHunt i część pozostałych portali skupiają się na ofertach technicznych. Sprawdź też zasady korzystania ze źródeł dla swojego przypadku.
+
+Przykład fragmentu konfiguracji (zastąp hasła swoimi):
+
+```toml
+[search]
+country = "pl"
+location = ""
+keywords = ["stanowisko a", "stanowisko b"]
+exclude_keywords = []
+
+[sources.justjoinit]
+enabled = true
+
+[sources.solidjobs]
+enabled = true
+divisions = ["IT", "Engineering", "Marketing", "Sales", "HR", "Logistics", "Finances", "Other"]
+campaign = "job-search-template"
+```
+
+W istniejącym `config.toml` **edytuj istniejące sekcje**, zamiast wklejać ich duplikaty. Hasła są alternatywami: oferta może pasować do jednego z nich. Pusta `location` nie ogranicza miasta. Zawężanie liczby działów SOLID przyspiesza zbieranie; `campaign` jest publicznym identyfikatorem ruchu wymaganym przez serwis, a nie hasłem.
 
 ## 1. Przygotuj repozytorium
 
@@ -72,6 +109,12 @@ Lokalne uruchomienie korzysta z lokalnego pliku historii; nie synchronizuje go a
 ## Prywatność i ograniczenia
 
 Konfiguracja wyszukiwania i gałąź z ofertami są widoczne dla osób z dostępem do repozytorium. Nie umieszczaj w konfiguracji danych wrażliwych. GitHub Secrets nie są częścią repozytorium, ale dostęp do wyników, logów i uprawnień workflow należy ograniczyć do zaufanych osób. Oferty mogą wygasać lub zmieniać się u źródła; otwórz oryginalny link, aby sprawdzić aktualność. Wynik nie jest automatyczną aplikacją o pracę.
+
+
+
+
+
+
 
 
 
