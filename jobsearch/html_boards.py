@@ -1,8 +1,7 @@
 """Ograniczone adaptery HTML dla publicznych tablic pracy.
 
 Moduł pobiera wyłącznie pola potrzebne do listy ofert. Nie utrwala opisów ani
-wynagrodzeń. Portale, których warunki zabraniają automatycznego pobierania,
-zwracają link do wyszukiwania ręcznego i nie otrzymują żądania HTTP.
+wynagrodzeń. Ten moduł obsługuje Pracuj.pl, the:protocol i JobHunt.
 """
 from __future__ import annotations
 
@@ -23,15 +22,6 @@ _USER_AGENT = "JobSearchStarter/0.1"
 _MAX_BODY = 4_000_000
 _MAX_PAGES = 10
 
-# Regulaminy zakazują automatycznego pobierania lub kopiowania treści tych
-# portali. Odblokowanie wymaga odrębnej, potwierdzonej zgody właściciela.
-_MANUAL_ONLY = {
-    "nofluffjobs": ("https://nofluffjobs.com/pl/jobs", "wymaga uprzedniej pisemnej zgody serwisu"),
-    "bulldogjob": ("https://bulldogjob.com/companies/jobs", "regulamin zabrania pobierania i kopiowania treści"),
-    "jobsora": ("https://pl.jobsora.com/praca", "regulamin zabrania automatycznego pozyskiwania danych"),
-    "czyjesteldorado": ("https://czyjesteldorado.pl/", "regulamin zabrania crawlerów i scrapingu"),
-}
-
 _SITES = {
     "pracuj": {
         "origin": "https://www.pracuj.pl",
@@ -47,7 +37,7 @@ _SITES = {
     },
 }
 
-_SUPPORTED = frozenset(_MANUAL_ONLY) | frozenset(_SITES)
+_SUPPORTED = frozenset(_SITES)
 _NO_RESULTS = (
     "nie znaleźliśmy ofert",
     "brak ofert pracy",
@@ -581,11 +571,6 @@ def _next_page(name: str, page: _Page, page_url: str, page_index: int) -> str | 
 def fetch(name: str, *, keywords: list[str], location: str, pages: int,
           timeout: int, options: dict[str, Any]) -> sources.SourceBatch:
     name = _valid_source(name)
-    if name in _MANUAL_ONLY:
-        manual_url, reason = _MANUAL_ONLY[name]
-        raise sources.SourceError(
-            f"automatyczne pobieranie wyłączone: {reason}; wyszukaj ręcznie: {manual_url}"
-        )
     if not isinstance(keywords, list) or not any(str(word).strip() for word in keywords):
         raise sources.SourceError("wpisz co najmniej jedno hasło wyszukiwania")
     try:

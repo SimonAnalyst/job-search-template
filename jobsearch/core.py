@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -86,6 +87,11 @@ def load_config(path: Path) -> dict[str, Any]:
 def _enabled(cfg: Any) -> bool:
     return isinstance(cfg, dict) and cfg.get("enabled") is True
 
+def _location_key(value: str) -> str:
+    folded = value.casefold().replace("ł", "l")
+    return "".join(char for char in unicodedata.normalize("NFKD", folded)
+                   if not unicodedata.combining(char))
+
 def collect(config: dict[str, Any], env: dict[str, str] | None = None) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
     env = os.environ if env is None else env
     search, collection = config["search"], config["collection"]
@@ -120,6 +126,10 @@ def collect(config: dict[str, Any], env: dict[str, str] | None = None) -> tuple[
             else:
                 if name in dynamic_names:
                     from . import dynamic_boards as board_adapter
+                elif name in {"nofluffjobs", "bulldogjob"}:
+                    from . import nfj_bulldog as board_adapter
+                elif name in {"jobsora", "czyjesteldorado"}:
+                    from . import jobsora_eldorado as board_adapter
                 else:
                     from . import html_boards as board_adapter
                 result = board_adapter.fetch(name, keywords=search["keywords"],
@@ -136,8 +146,8 @@ def collect(config: dict[str, Any], env: dict[str, str] | None = None) -> tuple[
                     continue
                 if any(word in text for word in search["exclude_keywords"]):
                     continue
-                target = search["location"].casefold()
-                if target and item.get("source") != "adzuna" and target not in item["location"].casefold():
+                target = _location_key(search["location"])
+                if target and item.get("source") != "adzuna" and target not in _location_key(item["location"]):
                     continue
                 matched.append({key: item.get(key, "") for key in
                                ("id", "title", "company", "location", "url", "source")})

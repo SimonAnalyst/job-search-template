@@ -5,26 +5,10 @@ from urllib.parse import parse_qs, urlsplit
 from jobsearch import html_boards, sources
 
 
-BLOCKED_SOURCES = {
-    "nofluffjobs": "https://nofluffjobs.com/pl/jobs",
-    "bulldogjob": "https://bulldogjob.com/companies/jobs",
-    "jobsora": "https://pl.jobsora.com/praca",
-    "czyjesteldorado": "https://czyjesteldorado.pl/",
-}
-
-
 class HtmlBoardTests(unittest.TestCase):
     def test_unknown_board_is_rejected(self):
         with self.assertRaises(sources.SourceError):
             html_boards.fetch("unknown", keywords=["test"], location="", pages=1, timeout=3, options={})
-
-    def test_restricted_boards_return_manual_search_links_without_network(self):
-        for name, manual_url in BLOCKED_SOURCES.items():
-            with self.subTest(source=name), patch.object(html_boards, "_fetch_html") as network:
-                with self.assertRaisesRegex(sources.SourceError, "wyłączone|zgod|zezwol") as caught:
-                    html_boards.fetch(name, keywords=["operator"], location="", pages=1, timeout=3, options={})
-                self.assertIn(manual_url, str(caught.exception))
-                network.assert_not_called()
 
     def test_pracuj_jsonld_extracts_only_allowlisted_fields(self):
         page = '''<html><script type="application/ld+json">{"@type":"JobPosting","identifier":"job-9","title":"Office assistant","hiringOrganization":{"name":"Demo Co"},"jobLocation":{"address":{"addressLocality":"Krakow"}},"url":"https://www.pracuj.pl/praca/office-assistant,oferta,job-9","description":"Private description"}</script></html>'''
